@@ -571,9 +571,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 // ══════════════════════════════════════════════
 //  FIREBASE CONFIG — paste yours here
 //  (from Firebase Console → Project Settings → Your apps → SDK setup)
-// ══════════════════════════════════════════════
-
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  // ══════════════════════════════════════════════
+  
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBpNJOuMQXzPLqP5mZ_GD9xfsvOvOd8KPU",
   authDomain: "beamsync-18125.firebaseapp.com",
@@ -611,19 +611,30 @@ let totalPages = 0;
 // ══════════════════════════════════════════════
 //  FIREBASE SYNC
 // ══════════════════════════════════════════════
+let pdfUrl = '';   // active PDF URL — pushed to Firebase so displays auto-load it
+
 function pushState(page) {
   if (!db || !sessionRef) return;
-  set(sessionRef, { page, ts: Date.now() });
+  set(sessionRef, { page, url: pdfUrl, ts: Date.now() });
 }
 
 function startHostSync() {
   if (!initFirebase()) return;
   sessionRef = ref(db, `beamsync/${sessionCode}`);
-  unsubscribe = onValue(sessionRef, (snapshot) => {
+  unsubscribe = onValue(sessionRef, async (snapshot) => {
     const data = snapshot.val();
-    if (!data || !pdfDoc) return;
+    if (!data) return;
+
+    // Auto-load PDF if URL arrives and we haven't loaded it yet
+    if (data.url && data.url !== pdfUrl) {
+      pdfUrl = data.url;
+      document.getElementById('host-pdf-url').value = pdfUrl;
+      await hostLoadPDF(true); // silent=true skips toast
+    }
+
+    // Sync page
     const p = data.page;
-    if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+    if (pdfDoc && p && p !== currentPage && p >= 1 && p <= totalPages) {
       currentPage = p;
       renderHostPage(currentPage);
     }
@@ -694,19 +705,20 @@ function backToLanding() {
 // ══════════════════════════════════════════════
 //  HOST LOGIC
 // ══════════════════════════════════════════════
-async function hostLoadPDF() {
+async function hostLoadPDF(silent = false) {
   const url = document.getElementById('host-pdf-url').value.trim();
   if (!url) { toast('Paste a PDF URL first.'); return; }
-  toast('Loading PDF…');
+  if (!silent) toast('Loading PDF…');
   try {
     pdfDoc = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
     totalPages = pdfDoc.numPages;
+    currentPage = 1;
     document.getElementById('host-setup-area').style.display = 'none';
     document.getElementById('host-pdf-area').style.display = 'flex';
     await renderHostPage(currentPage);
-    toast(`Loaded — ${totalPages} slides`);
+    toast(`Auto-loaded — ${totalPages} slides`);
   } catch(e) {
-    toast('Could not load PDF. Check URL & CORS.');
+    if (!silent) toast('Could not load PDF. Check URL & CORS.');
     console.error(e);
   }
 }
@@ -737,13 +749,14 @@ async function ctrlLoadPDF() {
     pdfDoc = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
     totalPages = pdfDoc.numPages;
     currentPage = 1;
+    pdfUrl = url;   // store so pushState can broadcast it
     document.getElementById('ctrl-setup-area').style.display = 'none';
     document.getElementById('ctrl-pdf-area').style.display = 'flex';
     document.getElementById('ctrl-controls').style.display = 'flex';
     updateCtrlButtons();
     await renderCtrlPage(currentPage);
-    await pushState(currentPage);
-    toast(`Loaded — ${totalPages} slides. Now syncing.`);
+    await pushState(currentPage);  // broadcasts url + page to all displays
+    toast(`Loaded — ${totalPages} slides. Displays will auto-load.`);
   } catch(e) {
     toast('Could not load PDF. Check URL & CORS.');
     console.error(e);
