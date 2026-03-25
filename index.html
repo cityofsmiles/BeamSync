@@ -487,6 +487,7 @@
       <span class="pill pill-live"><span class="dot dot-green"></span> &nbsp;LIVE</span>
     </div>
     <div style="display:flex;gap:0.5rem;">
+      <button class="btn-fullscreen" id="host-fs-btn" onclick="hostFullscreen()" style="display:none;">⛶ Fullscreen</button>
       <button class="btn-sm" onclick="backToLanding()">← Exit</button>
     </div>
   </div>
@@ -713,8 +714,16 @@ async function hostLoadPDF(silent = false) {
     currentPage = 1;
     document.getElementById('host-setup-area').style.display = 'none';
     document.getElementById('host-pdf-area').style.display = 'flex';
+    document.getElementById('host-fs-btn').style.display = '';
     await renderHostPage(currentPage);
     toast(`Auto-loaded — ${totalPages} slides`);
+    // Auto-fullscreen — browsers require a user gesture, so we attempt it
+    // and silently ignore if blocked (e.g. TV auto-loaded via Firebase)
+    const el = document.getElementById('host-pdf-area');
+    try {
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } catch(e) { /* blocked by browser — user can use F11 */ }
   } catch(e) {
     if (!silent) toast('Could not load PDF. Check URL & CORS.');
     console.error(e);
@@ -791,6 +800,17 @@ function updateCtrlButtons() {
   document.getElementById('btn-next').disabled = currentPage >= totalPages;
 }
 
+function hostFullscreen() {
+  const el = document.getElementById('host-pdf-area');
+  if (!document.fullscreenElement) {
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+}
+
 function toggleFullscreen() {
   const wrap = document.getElementById('ctrl-canvas-wrap');
   if (!document.fullscreenElement) {
@@ -856,6 +876,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ES module scope — expose functions used in inline onclick attributes
 window.showHostSetup  = showHostSetup;
+  window.hostFullscreen  = hostFullscreen;
 window.showCtrlSetup  = showCtrlSetup;
 window.backToLanding  = backToLanding;
 window.hostLoadPDF    = hostLoadPDF;
