@@ -492,20 +492,19 @@
     </div>
   </div>
 
-  <!-- PDF URL input area -->
-  <div class="host-setup" id="host-setup-area">
-    <div>
-      <div class="setup-label">BEAMER PDF URL</div>
-      <div class="url-row">
-        <input type="text" id="host-pdf-url" placeholder="https://example.com/slides.pdf" />
-        <button class="btn-primary" onclick="hostLoadPDF()">Load</button>
-      </div>
+  <!-- Waiting screen -->
+  <div class="host-setup" id="host-setup-area" style="align-items:center;justify-content:center;flex:1;text-align:center;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1.5rem;padding:4rem 2rem;">
+      <div class="spinner"></div>
+      <p style="color:var(--text);font-size:1.1rem;font-family:var(--mono);">Waiting for controller…</p>
+      <p style="color:var(--muted);font-size:0.8rem;font-family:var(--mono);line-height:1.8;">
+        Session: <strong id="host-session-display" style="color:var(--accent2);">—</strong><br>
+        Open the controller on another device,<br>
+        load a PDF, and this screen will sync automatically.
+      </p>
+      <!-- hidden input still needed by hostLoadPDF() -->
+      <input type="text" id="host-pdf-url" style="display:none;" />
     </div>
-    <p style="color:var(--muted);font-size:0.8rem;font-family:var(--mono);line-height:1.7;">
-      Paste the direct URL to your Beamer-generated PDF.<br>
-      The PDF must be publicly accessible (CORS-enabled).<br>
-      Session code: <strong id="host-session-display" style="color:var(--accent2);">—</strong>
-    </p>
   </div>
 
   <div class="pdf-area" id="host-pdf-area" style="display:none;">
