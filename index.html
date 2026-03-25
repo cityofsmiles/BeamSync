@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeamSync — Slide Presenter</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e10;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: #2e2e38;
+    --accent: #7c6af7;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --red: #f87171;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'Instrument Serif', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── LANDING ── */
+  #landing {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    gap: 3rem;
+  }
+
+  .logo {
+    text-align: center;
+  }
+  .logo h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #a78bfa 0%, #7c6af7 50%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .logo p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+    letter-spacing: 0.04em;
+    font-weight: 300;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    max-width: 720px;
+    width: 100%;
+  }
+
+  @media (max-width: 580px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border-radius: 16px;
+  }
+  .card-a::before { background: radial-gradient(circle at top left, rgba(124,106,247,0.15), transparent 70%); }
+  .card-b::before { background: radial-gradient(circle at top right, rgba(52,211,153,0.12), transparent 70%); }
+  .card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(124,106,247,0.15); }
+  .card:hover::before { opacity: 1; }
+
+  .card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    margin-bottom: 1.2rem;
+    font-weight: 500;
+  }
+  .badge-a { background: rgba(124,106,247,0.15); color: var(--accent2); border: 1px solid rgba(124,106,247,0.3); }
+  .badge-b { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+
+  .card h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .card p { color: var(--muted); font-size: 0.875rem; line-height: 1.6; }
+
+  .card-icon { font-size: 2rem; margin-bottom: 1rem; }
+
+  /* ── SESSION INPUT ── */
+  .session-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 420px;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .session-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  button {
+    cursor: pointer;
+    font-family: var(--sans);
+    font-weight: 500;
+    border: none;
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+
+  .btn-sm {
+    background: var(--surface2);
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--border);
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent2); }
+
+  .btn-danger {
+    background: rgba(248,113,113,0.15);
+    color: var(--red);
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    border: 1px solid rgba(248,113,113,0.3);
+  }
+  .btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+  /* ── HOST VIEW ── */
+  #host-view, #controller-view {
+    display: none;
+    width: 100%;
+    min-height: 100vh;
+    flex-direction: column;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar-brand {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .topbar-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+  .pill-session { background: rgba(124,106,247,0.15); color: var(--accent2); border: 1px solid rgba(124,106,247,0.3); }
+  .pill-page { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .pill-live { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+
+  /* ── PDF VIEWER ── */
+  .pdf-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: #111114;
+    position: relative;
+  }
+
+  #host-canvas-wrap, #ctrl-canvas-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  canvas {
+    max-width: 100%;
+    border-radius: 6px;
+    box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+  }
+
+  /* ── HOST SETUP ── */
+  .host-setup {
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .setup-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 0.4rem;
+  }
+
+  .url-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .url-row input { flex: 1; }
+
+  /* ── CONTROLLER ── */
+  .ctrl-bottom {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .nav-btn {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+  }
+  .nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); background: rgba(124,106,247,0.1); }
+  .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-fullscreen {
+    background: rgba(124,106,247,0.15);
+    color: var(--accent2);
+    border: 1px solid rgba(124,106,247,0.3);
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    font-family: var(--sans);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-fullscreen:hover { background: rgba(124,106,247,0.25); }
+
+  .page-indicator {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--muted);
+    min-width: 80px;
+    text-align: center;
+  }
+
+  /* ── FULLSCREEN ── */
+  :fullscreen canvas, :-webkit-full-screen canvas {
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  :fullscreen .ctrl-canvas-wrap { background: #000; }
+
+  /* ── STATUS DOT ── */
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot-green { background: var(--green); animation: pulse 2s infinite; }
+  .dot-gray { background: var(--muted); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── HOST LOADING STATE ── */
+  .host-iframe-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .loading-msg {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-family: var(--mono);
+    margin-top: 1rem;
+    letter-spacing: 0.05em;
+  }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.85rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 10px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 9999;
+    white-space: nowrap;
+    font-family: var(--mono);
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── HOST PDF AREA ── */
+  #host-view .pdf-area { min-height: 60vh; }
+  #host-view canvas { pointer-events: none; }
+
+  .no-slide-msg {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-family: var(--mono);
+    text-align: center;
+    padding: 4rem 2rem;
+    letter-spacing: 0.04em;
+  }
+  .no-slide-msg span {
+    display: block;
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    filter: grayscale(0.5);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════ LANDING ══════════════════════════════ -->
+<div id="landing">
+  <div class="logo">
+    <h1>BeamSync</h1>
+    <p>PRESENT · CONTROL · SYNC — ACROSS ANY DEVICE</p>
+  </div>
+
+  <div class="cards">
+    <div class="card card-a" onclick="showHostSetup()">
+      <div class="card-badge badge-a"><span class="dot dot-green"></span> DEVICE A</div>
+      <div class="card-icon">🖥️</div>
+      <h2>Host / Display</h2>
+      <p>Paste your Beamer PDF link. This screen shows the slides as they're navigated from the controller.</p>
+    </div>
+    <div class="card card-b" onclick="showCtrlSetup()">
+      <div class="card-badge badge-b"><span class="dot dot-green"></span> DEVICE B</div>
+      <div class="card-icon">📱</div>
+      <h2>Controller</h2>
+      <p>Navigate slides, go fullscreen, and present. Device A mirrors everything you do in real time.</p>
+    </div>
+  </div>
+
+  <div>
+    <div class="session-label">ENTER SESSION CODE (same on both devices)</div>
+    <div class="session-row">
+      <div class="input-wrap">
+        <input type="text" id="session-input" placeholder="e.g. math101" maxlength="30" />
+      </div>
+      <button class="btn-sm" onclick="genSession()">Random</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ HOST VIEW ══════════════════════════════ -->
+<div id="host-view">
+  <div class="topbar">
+    <span class="topbar-brand">BeamSync</span>
+    <div class="topbar-info">
+      <span class="pill pill-session" id="host-session-pill">—</span>
+      <span class="pill pill-page" id="host-page-pill">Page —</span>
+      <span class="pill pill-live"><span class="dot dot-green"></span> &nbsp;LIVE</span>
+    </div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn-sm" onclick="backToLanding()">← Exit</button>
+    </div>
+  </div>
+
+  <!-- PDF URL input area -->
+  <div class="host-setup" id="host-setup-area">
+    <div>
+      <div class="setup-label">BEAMER PDF URL</div>
+      <div class="url-row">
+        <input type="text" id="host-pdf-url" placeholder="https://example.com/slides.pdf" />
+        <button class="btn-primary" onclick="hostLoadPDF()">Load</button>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.8rem;font-family:var(--mono);line-height:1.7;">
+      Paste the direct URL to your Beamer-generated PDF.<br>
+      The PDF must be publicly accessible (CORS-enabled).<br>
+      Session code: <strong id="host-session-display" style="color:var(--accent2);">—</strong>
+    </p>
+  </div>
+
+  <div class="pdf-area" id="host-pdf-area" style="display:none;">
+    <div id="host-canvas-wrap">
+      <canvas id="host-canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ CONTROLLER VIEW ══════════════════════════════ -->
+<div id="controller-view">
+  <div class="topbar">
+    <span class="topbar-brand">BeamSync</span>
+    <div class="topbar-info">
+      <span class="pill pill-session" id="ctrl-session-pill">—</span>
+      <span class="pill pill-page" id="ctrl-page-pill">Page —</span>
+      <span class="pill pill-live"><span class="dot dot-green"></span> &nbsp;SYNCING</span>
+    </div>
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn-sm" onclick="backToLanding()">← Exit</button>
+    </div>
+  </div>
+
+  <div class="host-setup" id="ctrl-setup-area">
+    <div>
+      <div class="setup-label">BEAMER PDF URL</div>
+      <div class="url-row">
+        <input type="text" id="ctrl-pdf-url" placeholder="https://example.com/slides.pdf" />
+        <button class="btn-primary" onclick="ctrlLoadPDF()">Load & Control</button>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:0.8rem;font-family:var(--mono);line-height:1.7;">
+      Session: <strong id="ctrl-session-display" style="color:var(--green);">—</strong>
+    </p>
+  </div>
+
+  <div class="pdf-area" id="ctrl-pdf-area" style="display:none;">
+    <div id="ctrl-canvas-wrap">
+      <canvas id="ctrl-canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="ctrl-bottom" id="ctrl-controls" style="display:none;">
+    <button class="nav-btn" id="btn-prev" onclick="ctrlNavigate(-1)" disabled>← Prev</button>
+    <span class="page-indicator" id="ctrl-page-indicator">— / —</span>
+    <button class="nav-btn" id="btn-next" onclick="ctrlNavigate(1)" disabled>Next →</button>
+    <button class="btn-fullscreen" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- pdf.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, onValue, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// ── PDF.js worker ──
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ══════════════════════════════════════════════
+//  FIREBASE CONFIG — paste yours here
+//  (from Firebase Console → Project Settings → Your apps → SDK setup)
+// ══════════════════════════════════════════════
+
+
+ // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBpNJOuMQXzPLqP5mZ_GD9xfsvOvOd8KPU",
+  authDomain: "beamsync-18125.firebaseapp.com",
+  databaseURL: "https://beamsync-18125-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "beamsync-18125",
+  storageBucket: "beamsync-18125.firebasestorage.app",
+  messagingSenderId: "295182595824",
+  appId: "1:295182595824:web:cdbeabb13b2cd273d3f435",
+  measurementId: "G-RFYT2GTH3G"
+};
+
+let firebaseApp, db, sessionRef, unsubscribe;
+
+function initFirebase() {
+  if (firebaseConfig.apiKey === 'YOUR_API_KEY') {
+    toast('⚠️ Paste your Firebase config in the HTML first!');
+    return false;
+  }
+  if (!firebaseApp) {
+    firebaseApp = initializeApp(firebaseConfig);
+    db = getDatabase(firebaseApp);
+  }
+  return true;
+}
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let sessionCode = '';
+let mode = '';           // 'host' | 'ctrl'
+let pdfDoc = null;
+let currentPage = 1;
+let totalPages = 0;
+
+// ══════════════════════════════════════════════
+//  FIREBASE SYNC
+// ══════════════════════════════════════════════
+function pushState(page) {
+  if (!db || !sessionRef) return;
+  set(sessionRef, { page, ts: Date.now() });
+}
+
+function startHostSync() {
+  if (!initFirebase()) return;
+  sessionRef = ref(db, `beamsync/${sessionCode}`);
+  unsubscribe = onValue(sessionRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data || !pdfDoc) return;
+    const p = data.page;
+    if (p && p !== currentPage && p >= 1 && p <= totalPages) {
+      currentPage = p;
+      renderHostPage(currentPage);
+    }
+  });
+}
+
+function stopSync() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  sessionRef = null;
+}
+
+// ══════════════════════════════════════════════
+//  LANDING LOGIC
+// ══════════════════════════════════════════════
+function genSession() {
+  const words = ['alpha','beta','gamma','delta','sigma','lambda','omega','kappa','theta','phi'];
+  const w = words[Math.floor(Math.random()*words.length)];
+  const n = Math.floor(100 + Math.random()*900);
+  document.getElementById('session-input').value = `${w}${n}`;
+}
+
+function getSession() {
+  const v = document.getElementById('session-input').value.trim();
+  if (!v) { toast('Enter a session code first.'); return null; }
+  return v.toLowerCase().replace(/\s+/g,'');
+}
+
+function showHostSetup() {
+  const s = getSession();
+  if (!s) return;
+  sessionCode = s;
+  mode = 'host';
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('host-view').style.display = 'flex';
+  document.getElementById('host-session-pill').textContent = `# ${sessionCode}`;
+  document.getElementById('host-session-display').textContent = sessionCode;
+  startHostSync();
+}
+
+function showCtrlSetup() {
+  const s = getSession();
+  if (!s) return;
+  if (!initFirebase()) return;
+  sessionCode = s;
+  mode = 'ctrl';
+  sessionRef = ref(db, `beamsync/${sessionCode}`);
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('controller-view').style.display = 'flex';
+  document.getElementById('ctrl-session-pill').textContent = `# ${sessionCode}`;
+  document.getElementById('ctrl-session-display').textContent = sessionCode;
+}
+
+function backToLanding() {
+  stopSync();
+  pdfDoc = null;
+  currentPage = 1;
+  totalPages = 0;
+  document.getElementById('host-view').style.display = 'none';
+  document.getElementById('controller-view').style.display = 'none';
+  document.getElementById('host-pdf-area').style.display = 'none';
+  document.getElementById('host-setup-area').style.display = '';
+  document.getElementById('ctrl-pdf-area').style.display = 'none';
+  document.getElementById('ctrl-setup-area').style.display = '';
+  document.getElementById('ctrl-controls').style.display = 'none';
+  document.getElementById('landing').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════════
+//  HOST LOGIC
+// ══════════════════════════════════════════════
+async function hostLoadPDF() {
+  const url = document.getElementById('host-pdf-url').value.trim();
+  if (!url) { toast('Paste a PDF URL first.'); return; }
+  toast('Loading PDF…');
+  try {
+    pdfDoc = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
+    totalPages = pdfDoc.numPages;
+    document.getElementById('host-setup-area').style.display = 'none';
+    document.getElementById('host-pdf-area').style.display = 'flex';
+    await renderHostPage(currentPage);
+    toast(`Loaded — ${totalPages} slides`);
+  } catch(e) {
+    toast('Could not load PDF. Check URL & CORS.');
+    console.error(e);
+  }
+}
+
+async function renderHostPage(n) {
+  if (!pdfDoc) return;
+  const page = await pdfDoc.getPage(n);
+  const canvas = document.getElementById('host-canvas');
+  const wrap = document.getElementById('host-canvas-wrap');
+  const maxW = wrap.clientWidth || 900;
+  const viewport = page.getViewport({ scale: 1 });
+  const scale = Math.min(maxW / viewport.width, window.innerHeight * 0.82 / viewport.height);
+  const scaled = page.getViewport({ scale });
+  canvas.width = scaled.width;
+  canvas.height = scaled.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaled }).promise;
+  document.getElementById('host-page-pill').textContent = `Page ${n} / ${totalPages}`;
+}
+
+// ══════════════════════════════════════════════
+//  CONTROLLER LOGIC
+// ══════════════════════════════════════════════
+async function ctrlLoadPDF() {
+  const url = document.getElementById('ctrl-pdf-url').value.trim();
+  if (!url) { toast('Paste a PDF URL first.'); return; }
+  toast('Loading PDF…');
+  try {
+    pdfDoc = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
+    totalPages = pdfDoc.numPages;
+    currentPage = 1;
+    document.getElementById('ctrl-setup-area').style.display = 'none';
+    document.getElementById('ctrl-pdf-area').style.display = 'flex';
+    document.getElementById('ctrl-controls').style.display = 'flex';
+    updateCtrlButtons();
+    await renderCtrlPage(currentPage);
+    await pushState(currentPage);
+    toast(`Loaded — ${totalPages} slides. Now syncing.`);
+  } catch(e) {
+    toast('Could not load PDF. Check URL & CORS.');
+    console.error(e);
+  }
+}
+
+async function renderCtrlPage(n) {
+  if (!pdfDoc) return;
+  const page = await pdfDoc.getPage(n);
+  const canvas = document.getElementById('ctrl-canvas');
+  const wrap = document.getElementById('ctrl-canvas-wrap');
+  const maxW = wrap.clientWidth || 900;
+  const viewport = page.getViewport({ scale: 1 });
+  const scale = Math.min(maxW / viewport.width, (window.innerHeight * 0.72) / viewport.height);
+  const scaled = page.getViewport({ scale });
+  canvas.width = scaled.width;
+  canvas.height = scaled.height;
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaled }).promise;
+  document.getElementById('ctrl-page-pill').textContent = `Page ${n} / ${totalPages}`;
+  document.getElementById('ctrl-page-indicator').textContent = `${n} / ${totalPages}`;
+}
+
+async function ctrlNavigate(delta) {
+  const next = currentPage + delta;
+  if (next < 1 || next > totalPages) return;
+  currentPage = next;
+  updateCtrlButtons();
+  await renderCtrlPage(currentPage);
+  await pushState(currentPage);
+}
+
+function updateCtrlButtons() {
+  document.getElementById('btn-prev').disabled = currentPage <= 1;
+  document.getElementById('btn-next').disabled = currentPage >= totalPages;
+}
+
+function toggleFullscreen() {
+  const wrap = document.getElementById('ctrl-canvas-wrap');
+  if (!document.fullscreenElement) {
+    wrap.requestFullscreen?.() || wrap.webkitRequestFullscreen?.();
+  } else {
+    document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+  }
+}
+
+// Keyboard navigation on controller
+document.addEventListener('keydown', async (e) => {
+  if (mode !== 'ctrl' || !pdfDoc) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    await ctrlNavigate(1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    await ctrlNavigate(-1);
+  } else if (e.key === 'f' || e.key === 'F') {
+    toggleFullscreen();
+  }
+});
+
+// Touch swipe on controller canvas
+let touchStartX = 0;
+document.getElementById('ctrl-canvas-wrap')?.addEventListener?.('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+});
+document.getElementById('ctrl-canvas-wrap')?.addEventListener?.('touchend', async e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) {
+    await ctrlNavigate(dx < 0 ? 1 : -1);
+  }
+});
+
+// ══════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+genSession();
+
+// touch swipe — bind after DOM ready
+window.addEventListener('DOMContentLoaded', () => {
+  const wrap = document.getElementById('ctrl-canvas-wrap');
+  if (!wrap) return;
+  wrap.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  wrap.addEventListener('touchend', async e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) await ctrlNavigate(dx < 0 ? 1 : -1);
+  });
+});
+
+// ES module scope — expose functions used in inline onclick attributes
+window.showHostSetup  = showHostSetup;
+window.showCtrlSetup  = showCtrlSetup;
+window.backToLanding  = backToLanding;
+window.hostLoadPDF    = hostLoadPDF;
+window.ctrlLoadPDF    = ctrlLoadPDF;
+window.ctrlNavigate   = ctrlNavigate;
+window.toggleFullscreen = toggleFullscreen;
+window.genSession     = genSession;
+</script>
+</body>
+</html>
