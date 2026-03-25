@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BeamSync Remote</title>
+<style>
+  /* ── E-ink friendly: high contrast, no animations, no shadows ── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-family: Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  .sub {
+    font-size: 0.75rem;
+    color: #555;
+    text-align: center;
+    margin-bottom: 20px;
+    font-family: monospace;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── SETUP SCREEN ── */
+  #setup {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  label {
+    font-size: 0.7rem;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+    color: #333;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    border: 2px solid #000;
+    border-radius: 0;
+    font-size: 1rem;
+    padding: 10px 12px;
+    font-family: monospace;
+    background: #fff;
+    color: #000;
+    -webkit-appearance: none;
+  }
+  input[type="text"]:focus {
+    outline: 3px solid #000;
+    outline-offset: 2px;
+  }
+
+  .btn-connect {
+    width: 100%;
+    background: #000;
+    color: #fff;
+    border: none;
+    font-size: 1.1rem;
+    font-family: Georgia, serif;
+    padding: 14px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── CONTROLLER SCREEN ── */
+  #controller {
+    display: none;
+    width: 100%;
+    max-width: 380px;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .session-info {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #555;
+    letter-spacing: 0.08em;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  /* Big tap-friendly nav buttons */
+  .nav-row {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .btn-nav {
+    flex: 1;
+    background: #fff;
+    color: #000;
+    border: 3px solid #000;
+    font-size: 2.2rem;
+    font-family: Georgia, serif;
+    padding: 28px 10px;
+    cursor: pointer;
+    text-align: center;
+    -webkit-tap-highlight-color: #000;
+    /* Large tap target — important for Kindle */
+    min-height: 100px;
+  }
+  .btn-nav:active {
+    background: #000;
+    color: #fff;
+  }
+
+  .page-box {
+    width: 100%;
+    border: 2px solid #000;
+    padding: 12px;
+    text-align: center;
+    font-family: monospace;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    background: #f8f8f8;
+  }
+
+  .status-box {
+    width: 100%;
+    border: 1px solid #999;
+    padding: 8px 12px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #444;
+    text-align: center;
+    margin-bottom: 16px;
+    min-height: 28px;
+  }
+
+  /* Jump to page */
+  .jump-row {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .jump-row input {
+    flex: 1;
+    border: 2px solid #000;
+    font-size: 1rem;
+    padding: 10px;
+    font-family: monospace;
+    text-align: center;
+    background: #fff;
+    color: #000;
+    -webkit-appearance: none;
+  }
+  .btn-jump {
+    background: #000;
+    color: #fff;
+    border: none;
+    font-size: 0.9rem;
+    font-family: Georgia, serif;
+    padding: 10px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .btn-exit {
+    font-size: 0.75rem;
+    font-family: monospace;
+    background: #fff;
+    color: #555;
+    border: 1px solid #999;
+    padding: 8px 20px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+  }
+
+  /* Status dot */
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+  .dot-ok  { background: #000; }
+  .dot-err { background: #999; }
+</style>
+</head>
+<body>
+
+<h1>BeamSync</h1>
+<p class="sub">KINDLE REMOTE</p>
+
+<!-- ── SETUP ── -->
+<div id="setup">
+  <div>
+    <label>SESSION CODE</label>
+    <input type="text" id="inp-session" placeholder="e.g. math101" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+  </div>
+  <div>
+    <label>TOTAL SLIDES (optional)</label>
+    <input type="text" id="inp-total" placeholder="e.g. 24" autocomplete="off" />
+  </div>
+  <div>
+    <label>FIREBASE DATABASE URL</label>
+    <input type="text" id="inp-db" placeholder="https://YOUR_PROJECT-rtdb.firebaseio.com" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+  </div>
+  <button class="btn-connect" onclick="connect()">Connect</button>
+</div>
+
+<!-- ── CONTROLLER ── -->
+<div id="controller">
+  <div class="session-info" id="sess-label">—</div>
+
+  <div class="status-box" id="status-box">
+    <span class="dot dot-err" id="status-dot"></span><span id="status-text">Connecting…</span>
+  </div>
+
+  <div class="page-box" id="page-box">Page — / —</div>
+
+  <div class="nav-row">
+    <button class="btn-nav" id="btn-prev" onclick="navigate(-1)">&#8592; PREV</button>
+    <button class="btn-nav" id="btn-next" onclick="navigate(1)">NEXT &#8594;</button>
+  </div>
+
+  <div class="jump-row">
+    <input type="text" id="inp-jump" placeholder="Go to page…" />
+    <button class="btn-jump" onclick="jumpTo()">Go</button>
+  </div>
+
+  <button class="btn-exit" onclick="disconnect()">&#8592; Exit</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG — you can pre-fill these so Kindle
+//  doesn't have to type the long DB url every time
+// ══════════════════════════════════════════════
+var FIREBASE_DB_URL = ''; // e.g. "https://myproject-default-rtdb.firebaseio.com"
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+var session   = '';
+var dbUrl     = '';
+var curPage   = 1;
+var totPages  = 0;
+var pollTimer = null;
+
+// ══════════════════════════════════════════════
+//  FIREBASE REST (no SDK — works on Kindle)
+//  Realtime DB REST: GET/PUT to
+//  https://<db>.firebaseio.com/<path>.json
+// ══════════════════════════════════════════════
+function fbPath() {
+  return dbUrl + '/beamsync/' + session + '.json';
+}
+
+function fbPut(page, cb) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', fbPath(), true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (cb) cb(xhr.status === 200);
+    }
+  };
+  xhr.send(JSON.stringify({ page: page, ts: Date.now() }));
+}
+
+function fbGet(cb) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', fbPath() + '?nocache=' + Date.now(), true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4 && xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        cb(data && data.page ? data.page : null);
+      } catch(e) { cb(null); }
+    }
+  };
+  xhr.send();
+}
+
+// ══════════════════════════════════════════════
+//  CONNECT
+// ══════════════════════════════════════════════
+function connect() {
+  var s = document.getElementById('inp-session').value.trim().toLowerCase().replace(/\s+/g,'');
+  var db = document.getElementById('inp-db').value.trim().replace(/\/$/, '');
+  var tot = parseInt(document.getElementById('inp-total').value.trim()) || 0;
+
+  // Allow pre-filled DB URL
+  if (!db && FIREBASE_DB_URL) db = FIREBASE_DB_URL;
+
+  if (!s) { alert('Enter a session code.'); return; }
+  if (!db) { alert('Enter your Firebase Database URL.'); return; }
+
+  session  = s;
+  dbUrl    = db;
+  totPages = tot;
+  curPage  = 1;
+
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('controller').style.display = 'flex';
+  document.getElementById('sess-label').textContent = 'SESSION: ' + session.toUpperCase();
+
+  setStatus('connecting');
+  updatePageBox();
+
+  // Read current page from Firebase first
+  fbGet(function(p) {
+    if (p && p >= 1) {
+      curPage = p;
+      updatePageBox();
+    }
+    setStatus('ok');
+  });
+
+  // Poll every 3s to stay in sync with what host reports
+  // (lightweight — just to catch edge cases)
+  pollTimer = setInterval(function() {
+    fbGet(function(p) {
+      if (p) setStatus('ok');
+    });
+  }, 5000);
+}
+
+function disconnect() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  session = ''; dbUrl = ''; curPage = 1; totPages = 0;
+  document.getElementById('controller').style.display = 'none';
+  document.getElementById('setup').style.display = 'flex';
+  setStatus('connecting');
+}
+
+// ══════════════════════════════════════════════
+//  NAVIGATE
+// ══════════════════════════════════════════════
+function navigate(delta) {
+  var next = curPage + delta;
+  if (next < 1) return;
+  if (totPages > 0 && next > totPages) return;
+  curPage = next;
+  updatePageBox();
+  setStatus('sending');
+  fbPut(curPage, function(ok) {
+    setStatus(ok ? 'ok' : 'err');
+  });
+}
+
+function jumpTo() {
+  var v = parseInt(document.getElementById('inp-jump').value);
+  if (!v || v < 1) return;
+  if (totPages > 0 && v > totPages) return;
+  curPage = v;
+  document.getElementById('inp-jump').value = '';
+  updatePageBox();
+  setStatus('sending');
+  fbPut(curPage, function(ok) {
+    setStatus(ok ? 'ok' : 'err');
+  });
+}
+
+// ══════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════
+function updatePageBox() {
+  var total = totPages > 0 ? totPages : '?';
+  document.getElementById('page-box').textContent = 'Page ' + curPage + ' / ' + total;
+}
+
+function setStatus(state) {
+  var dot  = document.getElementById('status-dot');
+  var text = document.getElementById('status-text');
+  if (state === 'ok') {
+    dot.className = 'dot dot-ok';
+    text.textContent = 'Connected — ' + session.toUpperCase();
+  } else if (state === 'sending') {
+    dot.className = 'dot dot-ok';
+    text.textContent = 'Sending…';
+  } else if (state === 'err') {
+    dot.className = 'dot dot-err';
+    text.textContent = 'Error — check connection';
+  } else {
+    dot.className = 'dot dot-err';
+    text.textContent = 'Connecting…';
+  }
+}
+
+// Pre-fill DB URL if hardcoded above
+if (FIREBASE_DB_URL) {
+  document.getElementById('inp-db').value = FIREBASE_DB_URL;
+}
+</script>
+</body>
+</html>
